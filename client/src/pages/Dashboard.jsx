@@ -1,13 +1,13 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Star, Sparkles, Calendar, Heart } from 'lucide-react';
-import { AuthContext } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 import Loader from '../components/Loader';
 import toast from 'react-hot-toast';
 
 const Dashboard = () => {
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
   const [horoscope, setHoroscope] = useState(null);
   const [birthDetail, setBirthDetail] = useState(null);
   const [loading, setLoading] = useState(true);

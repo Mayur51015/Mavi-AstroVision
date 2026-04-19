@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Download, Edit2, Plus } from 'lucide-react';
-import { AuthContext } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import BirthChartWheel from '../components/BirthChartWheel';
 import api from '../utils/api';
 import Loader from '../components/Loader';
 import toast from 'react-hot-toast';
 
 const BirthChartPage = () => {
-  const { user } = useContext(AuthContext);
+  const { user } = useAuth();
   const [charts, setCharts] = useState([]);
   const [selectedChart, setSelectedChart] = useState(null);
   const [loading, setLoading] = useState(true);

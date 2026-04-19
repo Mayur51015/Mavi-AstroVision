@@ -1,5 +1,4 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { HelmetAsync } from 'react-helmet-async';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/Navbar';
@@ -31,8 +30,7 @@ const AdminRoute = ({ children }) => {
 
 function App() {
   return (
-    <HelmetAsync>
-      <ThemeProvider>
+    <ThemeProvider>
         <AuthProvider>
           <Router>
             <div className="min-h-screen flex flex-col bg-gradient-to-br from-cosmic-950 via-cosmic-900 to-cosmic-800">
@@ -100,7 +98,6 @@ function App() {
           </Router>
         </AuthProvider>
       </ThemeProvider>
-    </HelmetAsync>
   );
 }
 
