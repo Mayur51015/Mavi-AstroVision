@@ -1,81 +1,98 @@
-import React from 'react';
-import { Heart, Mail as MailIcon } from 'lucide-react';
-
-// Use simple emoji icons for social media as fallback
-const GithubIcon = () => <span>🐙</span>;
-const TwitterIcon = () => <span>𝕏</span>;
-const LinkedinIcon = () => <span>💼</span>;
+import { Link } from 'react-router-dom';
+import { Star, Heart, Sparkles } from 'lucide-react';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
 
+  const footerSections = [
+    {
+      title: 'Signature Experience',
+      links: [
+        { to: '/cosmic-life-map', label: 'Cosmic Life Map™' },
+        { to: '/birth-chart', label: 'Interactive Birth Chart' },
+        { to: '/cosmic-timeline', label: 'Cosmic Timeline' },
+        { to: '/reports', label: 'Downloadable PDF Reports' },
+      ],
+    },
+    {
+      title: 'Guidance & Tools',
+      links: [
+        { to: '/horoscope', label: 'Daily Guidance' },
+        { to: '/compatibility', label: 'Celestial Compatibility' },
+        { to: '/ai-astrology', label: 'AI Astrological Oracle' },
+        { to: '/calendar', label: 'Celestial Calendar' },
+      ],
+    },
+    {
+      title: 'Account',
+      links: [
+        { to: '/dashboard', label: 'Dashboard' },
+        { to: '/favorites', label: 'Saved & Bookmarks' },
+        { to: '/profile', label: 'Birth Profile' },
+        { to: '/settings', label: 'Preferences' },
+      ],
+    },
+  ];
+
   return (
-    <footer className="bg-cosmic-950 border-t border-cosmic-700 py-12 px-4">
-      <div className="max-w-6xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+    <footer className="bg-cosmic-950 border-t border-white/10 relative z-10">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 mb-10">
           {/* Brand */}
-          <div>
-            <h3 className="text-2xl font-bold bg-gradient-to-r from-cosmic-400 to-gold-500 bg-clip-text text-transparent mb-2">
-              ✨ Mavi-AstroVision
-            </h3>
-            <p className="text-cosmic-300 text-sm">
-              Your guiding light through the cosmos
+          <div className="col-span-2 sm:col-span-1">
+            <Link to="/" className="flex items-center gap-2 mb-3">
+              <Star className="text-gold-500 shrink-0" size={20} fill="currentColor" />
+              <span className="font-cinzel text-lg font-bold text-gradient-gold">Mavi-AstroVision</span>
+            </Link>
+            <p className="text-white/40 text-sm leading-relaxed mb-3">
+              Understand your personal cosmic pattern through an interactive, personalized experience.
             </p>
-          </div>
-
-          {/* Quick Links */}
-          <div>
-            <h4 className="text-gold-400 font-semibold mb-4">Quick Links</h4>
-            <ul className="space-y-2 text-cosmic-300 text-sm">
-              <li><a href="/" className="hover:text-gold-400 transition">Home</a></li>
-              <li><a href="/horoscope" className="hover:text-gold-400 transition">Horoscopes</a></li>
-              <li><a href="/chart" className="hover:text-gold-400 transition">Birth Chart</a></li>
-              <li><a href="/profile" className="hover:text-gold-400 transition">Profile</a></li>
-            </ul>
-          </div>
-
-          {/* Resources */}
-          <div>
-            <h4 className="text-gold-400 font-semibold mb-4">Resources</h4>
-            <ul className="space-y-2 text-cosmic-300 text-sm">
-              <li><a href="#" className="hover:text-gold-400 transition">Astrology 101</a></li>
-              <li><a href="#" className="hover:text-gold-400 transition">Zodiac Signs</a></li>
-              <li><a href="#" className="hover:text-gold-400 transition">Blog</a></li>
-              <li><a href="#" className="hover:text-gold-400 transition">FAQ</a></li>
-            </ul>
-          </div>
-
-          {/* Social */}
-          <div>
-            <h4 className="text-gold-400 font-semibold mb-4">Follow Us</h4>
-            <div className="flex gap-4">
-              <a href="#" className="text-cosmic-300 hover:text-gold-400 transition">
-                <TwitterIcon />
-              </a>
-              <a href="#" className="text-cosmic-300 hover:text-gold-400 transition">
-                <GithubIcon />
-              </a>
-              <a href="#" className="text-cosmic-300 hover:text-gold-400 transition">
-                <LinkedinIcon />
-              </a>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gold-500/10 border border-gold-500/20 text-gold-400 text-xs font-semibold">
+              <Sparkles size={12} /> Signature Cosmic Life Map™
             </div>
           </div>
+
+          {/* Link Sections */}
+          {footerSections.map((section) => (
+            <div key={section.title}>
+              <h4 className="text-white/60 font-semibold text-sm mb-4 uppercase tracking-wider">{section.title}</h4>
+              <ul className="space-y-2.5">
+                {section.links.map((link) => (
+                  <li key={link.to}>
+                    <Link
+                      to={link.to}
+                      className="text-white/40 hover:text-gold-400 text-sm transition-colors duration-200"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
 
-        {/* Divider */}
-        <div className="border-t border-cosmic-700 py-8">
-          <div className="flex flex-col md:flex-row justify-between items-center text-cosmic-400 text-sm">
-            <p>© {currentYear} Mavi-AstroVision. All rights reserved.</p>
-            <div className="flex gap-4 mt-4 md:mt-0">
-              <a href="#" className="hover:text-gold-400 transition">Privacy Policy</a>
-              <a href="#" className="hover:text-gold-400 transition">Terms of Service</a>
-              <a href="#" className="hover:text-gold-400 transition">Contact</a>
-            </div>
+        {/* Bottom Bar */}
+        <div className="border-t border-white/10 pt-8">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <p className="text-white/30 text-sm">
+              © {currentYear} Mavi-AstroVision. All rights reserved.
+            </p>
+            <p className="text-white/30 text-xs">
+              Data attribution:{' '}
+              <a
+                href="https://cosmyday.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-white/40 hover:text-white/60 underline transition"
+              >
+                CosmyDay
+              </a>
+            </p>
+            <p className="text-white/20 text-xs flex items-center gap-1">
+              Made with <Heart size={12} className="text-gold-500/60" /> for the cosmic community
+            </p>
           </div>
-          
-          <p className="text-center text-cosmic-500 text-xs mt-4 flex items-center justify-center gap-1">
-            Made with <Heart size={14} className="text-gold-500" /> by the cosmic team
-          </p>
         </div>
       </div>
     </footer>

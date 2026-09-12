@@ -1,6 +1,7 @@
 import User from '../models/User.js';
 import BirthDetail from '../models/BirthDetail.js';
 import Horoscope from '../models/Horoscope.js';
+import Article from '../models/Article.js';
 
 // @desc    Get all users (admin)
 // @route   GET /api/admin/users
@@ -45,6 +46,27 @@ export const deleteUser = async (req, res) => {
     await BirthDetail.deleteMany({ userId: req.params.id });
 
     res.json({ success: true, message: 'User deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Update user role (admin)
+// @route   PUT /api/admin/users/:id/role
+// @access  Admin
+export const updateUserRole = async (req, res) => {
+  try {
+    const { role } = req.body;
+    if (!['user', 'admin'].includes(role)) {
+      return res.status(400).json({ success: false, message: 'Invalid role' });
+    }
+
+    const user = await User.findByIdAndUpdate(req.params.id, { role }, { new: true }).select('-password');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    res.json({ success: true, user });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -184,6 +206,13 @@ export const getDashboardStats = async (req, res) => {
     const admins = await User.countDocuments({ role: 'admin' });
     const totalHoroscopes = await Horoscope.countDocuments();
     const publishedHoroscopes = await Horoscope.countDocuments({ isPublished: true });
+    const totalArticles = await Article.countDocuments();
+    const totalCharts = await BirthDetail.countDocuments();
+
+    // 7 days registration count
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const newUsersLast7Days = await User.countDocuments({ createdAt: { $gte: sevenDaysAgo } });
 
     res.json({
       success: true,
@@ -193,6 +222,9 @@ export const getDashboardStats = async (req, res) => {
         regularUsers: totalUsers - admins,
         totalHoroscopes,
         publishedHoroscopes,
+        totalArticles,
+        totalCharts,
+        newUsersLast7Days,
       },
     });
   } catch (error) {

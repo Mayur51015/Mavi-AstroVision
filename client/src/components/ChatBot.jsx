@@ -1,14 +1,21 @@
 import React, { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, Send, X } from 'lucide-react';
+import { MessageCircle, Send, X, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
+import api from '../utils/api';
 
 const ChatBot = () => {
+  const location = useLocation();
+  // Hide on AI Astrology pages where the full chat interface already exists
+  const hiddenPaths = ['/chatbot', '/ai-astrology'];
+  const shouldHide = hiddenPaths.includes(location.pathname);
+
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     {
       id: 1,
-      text: 'Hello! 🌙 I\'m your astrology assistant. Ask me anything about horoscopes, zodiac signs, or birth charts!',
+      text: 'Hello! 🌙 I\'m Mavi, your celestial assistant. Ask me anything about horoscopes, zodiac signs, or birth charts!',
       sender: 'bot'
     }
   ]);
@@ -16,20 +23,20 @@ const ChatBot = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const quickReplies = [
-    '🔮 Daily Horoscope',
-    '♈ Zodiac Info',
-    '📊 Birth Chart',
-    '💑 Compatibility'
+    'What are today\'s transits?',
+    'Are Leo and Sagittarius compatible?',
+    'Tell me about Moon signs',
+    'Is Mercury retrograde?'
   ];
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || isLoading) return;
 
-    // Add user message
+    const messageText = input;
     const userMessage = {
       id: Date.now(),
-      text: input,
+      text: messageText,
       sender: 'user'
     };
 
@@ -37,30 +44,37 @@ const ChatBot = () => {
     setInput('');
     setIsLoading(true);
 
-    // Simulate bot response
-    setTimeout(() => {
-      const responses = [
-        `That's a great question about "${input}"! Let me help you with astrology information.`,
-        `According to the stars, ${input} is an interesting topic! Would you like to know more?`,
-        `I can help you understand more about ${input}. This is fascinating cosmic wisdom!`
-      ];
-
-      const botMessage = {
-        id: Date.now() + 1,
-        text: responses[Math.floor(Math.random() * responses.length)],
-        sender: 'bot'
-      };
-
-      setMessages(prev => [...prev, botMessage]);
+    try {
+      const res = await api.post('/ai/chat', { message: messageText });
+      if (res.data.success) {
+        setMessages(prev => [
+          ...prev,
+          {
+            id: Date.now() + 1,
+            text: res.data.reply,
+            sender: 'bot',
+          }
+        ]);
+      }
+    } catch (err) {
+      setMessages(prev => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          text: 'The stars encountered a cosmic pause. Please try asking again!',
+          sender: 'bot',
+        }
+      ]);
+    } finally {
       setIsLoading(false);
-    }, 500);
+    }
   };
 
   const handleQuickReply = (reply) => {
     setInput(reply);
   };
 
-  return (
+  return shouldHide ? null : (
     <div className="fixed bottom-4 right-4 z-40">
       <AnimatePresence>
         {isOpen && (

@@ -70,6 +70,10 @@ const userSchema = new mongoose.Schema(
         ref: 'BirthDetail',
       },
     ],
+    googleId: {
+      type: String,
+      sparse: true,
+    },
     profileImage: {
       type: String,
       default: null,
@@ -78,6 +82,27 @@ const userSchema = new mongoose.Schema(
       type: String,
       maxlength: 500,
     },
+    timezone: {
+      type: String,
+      default: 'UTC',
+    },
+    preferredLanguage: {
+      type: String,
+      default: 'en',
+    },
+    isOnboarded: {
+      type: Boolean,
+      default: false,
+    },
+    notificationPreferences: {
+      dailyHoroscope: { type: Boolean, default: true },
+      weeklyHoroscope: { type: Boolean, default: false },
+      importantEvents: { type: Boolean, default: true },
+      reportsReady: { type: Boolean, default: true },
+      emailUpdates: { type: Boolean, default: true },
+    },
+    resetPasswordToken: String,
+    resetPasswordExpires: Date,
     lastLogin: {
       type: Date,
     },
@@ -111,6 +136,9 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
 userSchema.methods.getPublicData = function () {
   const user = this.toObject();
   delete user.password;
+  delete user.resetPasswordToken;
+  delete user.resetPasswordExpires;
+  user.name = user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'User';
   return user;
 };
 

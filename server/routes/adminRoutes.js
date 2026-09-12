@@ -2,6 +2,7 @@ import express from 'express';
 import {
   getAllUsers,
   deleteUser,
+  updateUserRole,
   getUserDetails,
   getAllHoroscopes,
   createHoroscope,
@@ -21,6 +22,8 @@ router.use(protect, adminOnly);
 router.get('/users', getAllUsers);
 router.get('/users/:id', getUserDetails);
 router.delete('/users/:id', deleteUser);
+router.put('/users/:id/role', updateUserRole);
+router.patch('/users/:id/role', updateUserRole);
 
 // Horoscope management
 router.get('/horoscopes', getAllHoroscopes);

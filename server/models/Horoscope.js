@@ -65,9 +65,18 @@ const horoscopeSchema = new mongoose.Schema(
       signs: [String],
       rating: Number,
     },
+    ratings: {
+      love: { type: Number, default: 4 },
+      career: { type: Number, default: 4 },
+      health: { type: Number, default: 4 },
+      finance: { type: Number, default: 4 },
+    },
     source: {
       type: String,
-      default: 'astrology-api',
+      default: 'mavi-astrology-engine',
+    },
+    transitData: {
+      type: mongoose.Schema.Types.Mixed,
     },
     isPublished: {
       type: Boolean,

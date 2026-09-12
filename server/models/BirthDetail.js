@@ -63,6 +63,11 @@ const birthDetailSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    chartSource: {
+      type: String,
+      enum: ['local-engine', 'cosmyday'],
+      default: 'local-engine',
+    },
   },
   { timestamps: true }
 );

@@ -1,194 +1,411 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { User, Mail, Phone, LogOut, Edit2, Check, X } from 'lucide-react';
+import {
+  User,
+  Mail,
+  Phone,
+  Calendar,
+  Clock,
+  MapPin,
+  Sparkles,
+  Edit3,
+  Save,
+  CheckCircle2,
+  Shield,
+  Settings,
+  Compass,
+  Sun,
+  Moon,
+  ArrowRight,
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import api from '../utils/api';
+import { useTheme } from '../context/ThemeContext';
+import StarsBackground from '../components/StarsBackground';
 import Loader from '../components/Loader';
+import api from '../utils/api';
 import toast from 'react-hot-toast';
+import Button from '../components/ui/Button';
+import Badge from '../components/ui/Badge';
+import PageHeader from '../components/ui/PageHeader';
+
+const AVATAR_PRESETS = [
+  '♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓', '🌟', '🌙', '☀️', '🔮',
+];
 
 const ProfilePage = () => {
-  const { user, logout } = useAuth();
+  const { user, updateUser } = useAuth();
+  const { isDark } = useTheme();
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [birthDetail, setBirthDetail] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(false);
+
   const [formData, setFormData] = useState({
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
-    phone: user?.phone || '',
-    bio: user?.bio || '',
+    firstName: '',
+    lastName: '',
+    phone: '',
+    gender: 'other',
+    bio: '',
+    profileImage: '',
   });
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const [birthForm, setBirthForm] = useState({
+    dateOfBirth: '',
+    timeOfBirth: '12:00',
+    placeOfBirth: '',
+  });
 
-  const handleSave = async () => {
+  useEffect(() => {
+    fetchProfileData();
+  }, []);
+
+  const fetchProfileData = async () => {
     try {
       setLoading(true);
-      await api.put('/users/profile', formData);
-      toast.success('Profile updated successfully!');
-      setIsEditing(false);
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update profile');
+      const res = await api.get('/users/profile');
+      const u = res.data.user;
+      const b = res.data.birthDetail;
+
+      setBirthDetail(b);
+      setFormData({
+        firstName: u.firstName || '',
+        lastName: u.lastName || '',
+        phone: u.phone || '',
+        gender: u.gender || 'other',
+        bio: u.bio || '',
+        profileImage: u.profileImage || '',
+      });
+
+      if (b) {
+        setBirthForm({
+          dateOfBirth: b.dateOfBirth ? new Date(b.dateOfBirth).toISOString().split('T')[0] : '',
+          timeOfBirth: b.timeOfBirth || '12:00',
+          placeOfBirth: b.placeOfBirth || '',
+        });
+      }
+    } catch {
+      toast.error('Failed to load profile details');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const res = await api.put('/users/profile', formData);
+      updateUser(res.data.user);
+
+      // If birth details were updated
+      if (birthForm.dateOfBirth && birthForm.placeOfBirth) {
+        const bRes = await api.post('/users/birth-details', {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          dateOfBirth: birthForm.dateOfBirth,
+          timeOfBirth: birthForm.timeOfBirth,
+          placeOfBirth: birthForm.placeOfBirth,
+          latitude: birthDetail?.latitude || 19.0760,
+          longitude: birthDetail?.longitude || 72.8777,
+          timezone: birthDetail?.timezone || 'UTC',
+        });
+        setBirthDetail(bRes.data.birthDetail);
+      }
+
+      toast.success('Celestial profile updated! ✨');
+      setIsEditing(false);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update profile');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const calculateCompletion = () => {
+    let score = 0;
+    if (formData.firstName) score += 15;
+    if (formData.lastName) score += 15;
+    if (user?.email) score += 15;
+    if (formData.bio) score += 15;
+    if (formData.profileImage) score += 10;
+    if (birthDetail?.dateOfBirth || birthForm.dateOfBirth) score += 15;
+    if (birthDetail?.placeOfBirth || birthForm.placeOfBirth) score += 15;
+    return Math.min(100, score);
+  };
+
+  const completion = calculateCompletion();
+
+  if (loading) return <Loader text="Aligning seeker profile..." />;
+
+  const inputClass = `w-full px-3.5 py-2.5 rounded-lg border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-gold-500/40 ${
+    isDark
+      ? 'bg-obsidian-950 border-obsidian-700 text-slate-100 placeholder-slate-500 focus:border-gold-500/60 disabled:opacity-60 disabled:cursor-not-allowed'
+      : 'bg-slate-50 border-slate-200 text-slate-900 disabled:opacity-60'
+  }`;
+
+  const labelClass = `block text-xs font-semibold mb-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-cosmic-950 via-cosmic-900 to-cosmic-800 py-8 px-4">
-      <div className="max-w-2xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <h1 className="text-4xl font-bold text-gold-400 mb-2">Your Profile</h1>
-          <p className="text-cosmic-300">Manage your cosmic identity</p>
-        </motion.div>
+    <div className="space-y-6 pb-12 max-w-5xl mx-auto">
+      {/* ─── Page Header ─── */}
+      <PageHeader
+        title="Celestial Profile"
+        subtitle="Manage your personal identity, astrological coordinates, and avatar signature"
+        badge={
+          <Badge variant="gold" className="text-[10px] tracking-wider uppercase font-semibold">
+            Seeker Profile
+          </Badge>
+        }
+        actions={
+          <div className="flex items-center gap-2.5">
+            <Link to="/settings">
+              <Button variant="secondary" size="sm">
+                <Settings size={14} /> Settings
+              </Button>
+            </Link>
+            <Button
+              variant={isEditing ? 'outline' : 'primary'}
+              size="sm"
+              onClick={() => setIsEditing(!isEditing)}
+            >
+              <Edit3 size={14} /> {isEditing ? 'Cancel Edit' : 'Edit Profile'}
+            </Button>
+          </div>
+        }
+      />
 
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-cosmic-900/50 backdrop-blur border border-cosmic-700 rounded-xl p-8"
-        >
-          {/* Profile Avatar */}
-          <div className="flex justify-center mb-8">
-            <div className="w-24 h-24 bg-gradient-to-r from-cosmic-600 to-gold-500 rounded-full flex items-center justify-center text-3xl">
-              {user?.firstName?.charAt(0)}
+      {/* ─── Profile Completion Bar ─── */}
+      <div className="card-saas p-5">
+        <div className="flex items-center justify-between mb-2.5">
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-200">
+            <Sparkles className="text-gold-400" size={15} />
+            <span>Profile Astrological Completion</span>
+          </div>
+          <span className="text-xs font-mono font-bold text-gold-400">{completion}%</span>
+        </div>
+        <div className="h-1.5 w-full bg-obsidian-800 rounded-full overflow-hidden">
+          <motion.div
+            className="h-full bg-gradient-to-r from-gold-500 to-emerald-400 rounded-full"
+            initial={{ width: 0 }}
+            animate={{ width: `${completion}%` }}
+            transition={{ duration: 0.8, ease: 'easeOut' }}
+          />
+        </div>
+        {completion < 100 && (
+          <p className="text-[11px] text-slate-500 mt-2">
+            Tip: Complete your birth details and cosmic bio to achieve 100% chart synthesis precision.
+          </p>
+        )}
+      </div>
+
+      {/* ─── Main Grid: Identity Card & Form ─── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Left: Avatar & Natal Signs Summary */}
+        <div className="md:col-span-1 space-y-4">
+          <div className="card-saas p-6 text-center space-y-4">
+            <div className="relative inline-block mx-auto">
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-gold-500/30 to-iris-500/30 p-0.5 shadow-md">
+                <div className="w-full h-full rounded-2xl bg-obsidian-950 flex items-center justify-center text-3xl font-cinzel font-bold text-gold-400 border border-gold-500/30">
+                  {formData.profileImage || formData.firstName?.charAt(0) || '✨'}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h2 className="text-lg font-cinzel font-bold text-white">
+                {formData.firstName} {formData.lastName}
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">{user?.email}</p>
+            </div>
+
+            {/* Big 3 Signs */}
+            <div className="pt-4 border-t border-obsidian-800 grid grid-cols-3 gap-2 text-center">
+              <div className="p-2 rounded-lg bg-obsidian-950 border border-obsidian-800">
+                <span className="text-[9px] text-slate-500 font-bold uppercase block">SUN</span>
+                <span className="text-xs font-semibold text-gold-400 truncate block">
+                  {birthDetail?.sunSign || '—'}
+                </span>
+              </div>
+              <div className="p-2 rounded-lg bg-obsidian-950 border border-obsidian-800">
+                <span className="text-[9px] text-slate-500 font-bold uppercase block">MOON</span>
+                <span className="text-xs font-semibold text-iris-400 truncate block">
+                  {birthDetail?.moonSign || '—'}
+                </span>
+              </div>
+              <div className="p-2 rounded-lg bg-obsidian-950 border border-obsidian-800">
+                <span className="text-[9px] text-slate-500 font-bold uppercase block">RISING</span>
+                <span className="text-xs font-semibold text-emerald-400 truncate block">
+                  {birthDetail?.ascendant || '—'}
+                </span>
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <Link to="/birth-chart" className="w-full">
+                <Button variant="secondary" size="sm" className="w-full text-xs">
+                  <Compass size={13} /> View Full Wheel
+                </Button>
+              </Link>
             </div>
           </div>
+        </div>
 
-          {/* Profile Info */}
-          <div className="space-y-6">
-            {/* Name */}
-            <div className="grid grid-cols-2 gap-4">
+        {/* Right: Editable Form */}
+        <div className="md:col-span-2">
+          <form onSubmit={handleSaveProfile} className="card-saas p-6 space-y-5">
+            <div className="flex items-center justify-between border-b border-obsidian-800 pb-3">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+                <User size={15} className="text-gold-400" /> Personal Identity Details
+              </h3>
+              {isEditing && (
+                <Badge variant="iris" className="text-[10px]">
+                  Editing Active
+                </Badge>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-cosmic-400 text-sm mb-2 block">First Name</label>
+                <label className={labelClass}>First Name</label>
                 <input
                   type="text"
-                  name="firstName"
+                  disabled={!isEditing}
                   value={formData.firstName}
-                  onChange={handleChange}
-                  disabled={!isEditing}
-                  className="w-full bg-cosmic-800 border border-cosmic-700 rounded px-4 py-2 text-white disabled:opacity-50 focus:border-gold-500 outline-none"
+                  onChange={(e) => setFormData((p) => ({ ...p, firstName: e.target.value }))}
+                  className={inputClass}
                 />
               </div>
               <div>
-                <label className="text-cosmic-400 text-sm mb-2 block">Last Name</label>
+                <label className={labelClass}>Last Name</label>
                 <input
                   type="text"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleChange}
                   disabled={!isEditing}
-                  className="w-full bg-cosmic-800 border border-cosmic-700 rounded px-4 py-2 text-white disabled:opacity-50 focus:border-gold-500 outline-none"
+                  value={formData.lastName}
+                  onChange={(e) => setFormData((p) => ({ ...p, lastName: e.target.value }))}
+                  className={inputClass}
                 />
               </div>
             </div>
 
-            {/* Email (Read-only) */}
-            <div>
-              <label className="text-cosmic-400 text-sm mb-2 block flex items-center gap-2">
-                <Mail size={16} /> Email
-              </label>
-              <input
-                type="email"
-                value={user?.email}
-                disabled
-                className="w-full bg-cosmic-800 border border-cosmic-700 rounded px-4 py-2 text-cosmic-400 disabled:opacity-50"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className={labelClass}>Phone</label>
+                <input
+                  type="text"
+                  disabled={!isEditing}
+                  value={formData.phone}
+                  onChange={(e) => setFormData((p) => ({ ...p, phone: e.target.value }))}
+                  placeholder="+1 (555) 000-0000"
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Gender / Pronouns</label>
+                <select
+                  disabled={!isEditing}
+                  value={formData.gender}
+                  onChange={(e) => setFormData((p) => ({ ...p, gender: e.target.value }))}
+                  className={inputClass}
+                >
+                  <option value="female">Female</option>
+                  <option value="male">Male</option>
+                  <option value="other">Other / Non-Binary</option>
+                </select>
+              </div>
             </div>
 
-            {/* Phone */}
             <div>
-              <label className="text-cosmic-400 text-sm mb-2 block flex items-center gap-2">
-                <Phone size={16} /> Phone
-              </label>
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                disabled={!isEditing}
-                className="w-full bg-cosmic-800 border border-cosmic-700 rounded px-4 py-2 text-white disabled:opacity-50 focus:border-gold-500 outline-none"
-              />
-            </div>
-
-            {/* Bio */}
-            <div>
-              <label className="text-cosmic-400 text-sm mb-2 block">Bio</label>
+              <label className={labelClass}>Cosmic Bio</label>
               <textarea
-                name="bio"
-                value={formData.bio}
-                onChange={handleChange}
+                rows={3}
                 disabled={!isEditing}
-                placeholder="Tell us about yourself..."
-                rows="4"
-                className="w-full bg-cosmic-800 border border-cosmic-700 rounded px-4 py-2 text-white disabled:opacity-50 focus:border-gold-500 outline-none"
+                value={formData.bio}
+                onChange={(e) => setFormData((p) => ({ ...p, bio: e.target.value }))}
+                placeholder="Share your spiritual journey or celestial reflections..."
+                className={inputClass}
               />
             </div>
 
-            {/* Status Info */}
-            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-cosmic-700">
-              <div>
-                <p className="text-cosmic-400 text-sm">Role</p>
-                <p className="text-gold-400 font-semibold capitalize">{user?.role}</p>
+            {isEditing && (
+              <div className="space-y-2">
+                <label className={labelClass}>Avatar Archetype Preset</label>
+                <div className="flex flex-wrap gap-2">
+                  {AVATAR_PRESETS.map((symbol) => (
+                    <button
+                      type="button"
+                      key={symbol}
+                      onClick={() => setFormData((p) => ({ ...p, profileImage: symbol }))}
+                      className={`w-9 h-9 rounded-lg border flex items-center justify-center text-sm transition-all ${
+                        formData.profileImage === symbol
+                          ? 'bg-gold-500 border-gold-400 text-obsidian-950 font-bold scale-105 shadow'
+                          : 'bg-obsidian-950 border-obsidian-800 text-slate-300 hover:bg-obsidian-800'
+                      }`}
+                    >
+                      {symbol}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div>
-                <p className="text-cosmic-400 text-sm">Subscription</p>
-                <p className="text-cosmic-300 font-semibold capitalize">{user?.subscriptionStatus}</p>
+            )}
+
+            {/* Natal Coordinates Section */}
+            <div className="pt-5 border-t border-obsidian-800 space-y-4">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+                <Compass size={15} className="text-gold-400" /> Natal Birth Information
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className={labelClass}>Birth Date</label>
+                  <input
+                    type="date"
+                    disabled={!isEditing}
+                    value={birthForm.dateOfBirth}
+                    onChange={(e) => setBirthForm((p) => ({ ...p, dateOfBirth: e.target.value }))}
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Birth Time</label>
+                  <input
+                    type="time"
+                    disabled={!isEditing}
+                    value={birthForm.timeOfBirth}
+                    onChange={(e) => setBirthForm((p) => ({ ...p, timeOfBirth: e.target.value }))}
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Birth Place</label>
+                  <input
+                    type="text"
+                    disabled={!isEditing}
+                    value={birthForm.placeOfBirth}
+                    onChange={(e) => setBirthForm((p) => ({ ...p, placeOfBirth: e.target.value }))}
+                    placeholder="e.g. London, UK"
+                    className={inputClass}
+                  />
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-4 mt-8 pt-8 border-t border-cosmic-700">
-            {!isEditing ? (
-              <>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  onClick={() => setIsEditing(true)}
-                  className="flex-1 bg-gradient-to-r from-cosmic-600 to-cosmic-500 hover:from-cosmic-500 hover:to-cosmic-400 text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2 transition"
+            {isEditing && (
+              <div className="pt-4 border-t border-obsidian-800 flex justify-end">
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="md"
+                  loading={saving}
+                  className="font-semibold"
                 >
-                  <Edit2 size={18} /> Edit Profile
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  onClick={logout}
-                  className="flex-1 bg-red-900/50 hover:bg-red-900 text-red-200 font-semibold py-3 rounded-lg flex items-center justify-center gap-2 transition border border-red-700"
-                >
-                  <LogOut size={18} /> Logout
-                </motion.button>
-              </>
-            ) : (
-              <>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  onClick={handleSave}
-                  disabled={loading}
-                  className="flex-1 bg-green-600 hover:bg-green-500 text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2 transition disabled:opacity-50"
-                >
-                  <Check size={18} /> Save Changes
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  onClick={() => {
-                    setIsEditing(false);
-                    setFormData({
-                      firstName: user?.firstName || '',
-                      lastName: user?.lastName || '',
-                      phone: user?.phone || '',
-                      bio: user?.bio || '',
-                    });
-                  }}
-                  className="flex-1 bg-cosmic-700 hover:bg-cosmic-600 text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2 transition"
-                >
-                  <X size={18} /> Cancel
-                </motion.button>
-              </>
+                  <Save size={15} /> Save All Changes
+                </Button>
+              </div>
             )}
-          </div>
-        </motion.div>
+          </form>
+        </div>
       </div>
     </div>
   );

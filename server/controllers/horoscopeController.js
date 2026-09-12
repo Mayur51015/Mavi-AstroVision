@@ -1,72 +1,76 @@
 import BirthDetail from '../models/BirthDetail.js';
 import Horoscope from '../models/Horoscope.js';
 import User from '../models/User.js';
-import { getDailyHoroscope, getMonthlyHoroscope, getYearlyHoroscope } from '../services/astrologyApiService.js';
+import { getOrGenerateHoroscope } from '../services/horoscopeGeneratorService.js';
 
 const zodiacSigns = [
-  'Aries',
-  'Taurus',
-  'Gemini',
-  'Cancer',
-  'Leo',
-  'Virgo',
-  'Libra',
-  'Scorpio',
-  'Sagittarius',
-  'Capricorn',
-  'Aquarius',
-  'Pisces',
+  'Aries', 'Taurus', 'Gemini', 'Cancer',
+  'Leo', 'Virgo', 'Libra', 'Scorpio',
+  'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces',
 ];
 
-// @desc    Get today's horoscope for a zodiac sign
-// @route   GET /api/horoscope/daily/:sign
+// @desc    Get horoscope for a zodiac sign and period (daily/weekly/monthly/yearly)
+// @route   GET /api/horoscope/:sign/:period?
 // @access  Public
-export const getDailyHoroscopeBySign = async (req, res) => {
+export const getHoroscopeBySignAndPeriod = async (req, res) => {
   try {
-    const { sign } = req.params;
+    let { sign, period = 'daily' } = req.params;
+    const formattedSign = sign.charAt(0).toUpperCase() + sign.slice(1).toLowerCase();
 
-    if (!zodiacSigns.includes(sign)) {
+    if (!zodiacSigns.includes(formattedSign)) {
       return res.status(400).json({ success: false, message: 'Invalid zodiac sign' });
     }
 
-    // Try to fetch from API
-    const apiData = await getDailyHoroscope(sign);
-
-    if (apiData) {
-      res.json({ success: true, horoscope: apiData });
-    } else {
-      res.status(500).json({ success: false, message: 'Unable to fetch horoscope' });
+    const validPeriods = ['daily', 'weekly', 'monthly', 'yearly'];
+    if (!validPeriods.includes(period.toLowerCase())) {
+      period = 'daily';
     }
+
+    const horoscope = await getOrGenerateHoroscope(formattedSign, period.toLowerCase());
+
+    res.json({ success: true, horoscope });
   } catch (error) {
+    console.error('getHoroscopeBySignAndPeriod error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
+// @desc    Get today's horoscope for a zodiac sign (backward compatibility)
+// @route   GET /api/horoscope/daily/:sign
+// @access  Public
+export const getDailyHoroscopeBySign = async (req, res) => {
+  req.params.period = 'daily';
+  return getHoroscopeBySignAndPeriod(req, res);
+};
+
 // @desc    Get horoscope for current user
-// @route   GET /api/horoscope/me/:period
+// @route   GET /api/horoscope/me/:period?
 // @access  Private
 export const getUserHoroscope = async (req, res) => {
   try {
     const { period = 'daily' } = req.params;
 
-    const birthDetail = await BirthDetail.findOne({ userId: req.user._id });
-    if (!birthDetail || !birthDetail.sunSign) {
-      return res.status(400).json({ success: false, message: 'Please add your birth details first' });
+    // First check user document
+    const user = await User.findById(req.user._id);
+    let sign = user?.sunSign;
+
+    if (!sign) {
+      const birthDetail = await BirthDetail.findOne({ userId: req.user._id });
+      sign = birthDetail?.sunSign;
     }
 
-    const sign = birthDetail.sunSign;
-
-    let horoscope;
-    if (period === 'daily') {
-      horoscope = await getDailyHoroscope(sign);
-    } else if (period === 'monthly') {
-      horoscope = await getMonthlyHoroscope(sign);
-    } else if (period === 'yearly') {
-      horoscope = await getYearlyHoroscope(sign, new Date().getFullYear());
+    if (!sign) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please complete your profile or add your birth details to unlock your personal horoscope',
+      });
     }
 
-    res.json({ success: true, horoscope });
+    const horoscope = await getOrGenerateHoroscope(sign, period.toLowerCase());
+
+    res.json({ success: true, userSign: sign, horoscope });
   } catch (error) {
+    console.error('getUserHoroscope error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -76,10 +80,10 @@ export const getUserHoroscope = async (req, res) => {
 // @access  Public
 export const getAllHoroscopes = async (req, res) => {
   try {
-    const { sign, period = 'daily', page = 1, limit = 10 } = req.query;
+    const { sign, period = 'daily', page = 1, limit = 12 } = req.query;
 
     const filter = { isPublished: true };
-    if (sign) filter.sunSign = sign;
+    if (sign) filter.sunSign = sign.charAt(0).toUpperCase() + sign.slice(1).toLowerCase();
     if (period) filter.timePeriod = period;
 
     const horoscopes = await Horoscope.find(filter)
@@ -93,8 +97,8 @@ export const getAllHoroscopes = async (req, res) => {
       success: true,
       horoscopes,
       pagination: {
-        currentPage: page,
-        totalPages: Math.ceil(total / limit),
+        currentPage: Number(page),
+        totalPages: Math.ceil(total / limit) || 1,
         total,
       },
     });
@@ -148,7 +152,7 @@ export const removeFromFavorites = async (req, res) => {
 export const getFavorites = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).populate('favoriteHoroscopes');
-    res.json({ success: true, favorites: user.favoriteHoroscopes });
+    res.json({ success: true, favorites: user.favoriteHoroscopes || [] });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
