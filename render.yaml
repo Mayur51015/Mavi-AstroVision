@@ -1,0 +1,40 @@
+services:
+  - type: web
+    name: mavi-astrovision-server
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: CLIENT_URL
+        sync: false
+      - key: ASTROLOGY_API_KEY
+        sync: false
+      - key: ASTROLOGY_API_BASE_URL
+        value: https://json.astrologyapi.com/v1
+      - key: COSMYDAY_BASE_URL
+        value: https://api.cosmyday.com
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_CALLBACK_URL
+        sync: false
+      - key: ADMIN_EMAIL
+        value: admin@maviastrovision.com
+      - key: ADMIN_DEFAULT_PASSWORD
+        generateValue: true
