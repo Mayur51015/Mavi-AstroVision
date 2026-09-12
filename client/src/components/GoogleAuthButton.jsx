@@ -3,8 +3,9 @@ import { useTheme } from '../context/ThemeContext';
 
 const GoogleAuthButton = ({ label = 'Continue with Google' }) => {
   const { isDark } = useTheme();
-  const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-  const googleAuthUrl = `${apiBase}/api/auth/google`;
+  const rawApi = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const serverBase = rawApi.replace(/\/api\/?$/, '');
+  const googleAuthUrl = `${serverBase}/api/auth/google`;
 
   return (
     <a

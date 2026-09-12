@@ -92,9 +92,27 @@ const app = express();
     }));
 
 // Middleware
+const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:5173')
+  .split(',')
+  .map((origin) => origin.trim().replace(/\/$/, ''))
+  .filter(Boolean);
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      const normalized = origin.replace(/\/$/, '');
+      const isAllowed =
+        allowedOrigins.includes(normalized) ||
+        allowedOrigins.includes('*') ||
+        /\.vercel\.app$/.test(new URL(origin).hostname) ||
+        normalized.includes('localhost');
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        callback(null, true);
+      }
+    },
     credentials: true,
   })
 );
