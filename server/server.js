@@ -103,10 +103,23 @@ const syncAdminUsers = async () => {
     });
 
     // Google OAuth Strategy
+    const getGoogleCallbackURL = () => {
+      if (process.env.GOOGLE_CALLBACK_URL) {
+        return process.env.GOOGLE_CALLBACK_URL;
+      }
+      if (process.env.NODE_ENV === 'production' || process.env.RENDER) {
+        return 'https://mavi-astrovision.onrender.com/api/auth/google/callback';
+      }
+      return 'http://localhost:5000/api/auth/google/callback';
+    };
+
+    const googleCallbackURL = getGoogleCallbackURL();
+    console.log(`🔐 Google OAuth Callback registered: ${googleCallbackURL}`);
+
     passport.use(new GoogleStrategy({
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:5000/api/auth/google/callback',
+      callbackURL: googleCallbackURL,
     }, async (accessToken, refreshToken, profile, done) => {
       try {
         const email = profile.emails && profile.emails[0] ? profile.emails[0].value : null;

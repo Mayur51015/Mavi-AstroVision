@@ -30,6 +30,8 @@ const LoginPage = () => {
     }
 
     if (token) {
+      // Immediately scrub the token parameter from the browser URL address bar to prevent token exposure
+      window.history.replaceState({}, document.title, window.location.pathname);
       setLoading(true);
       localStorage.setItem('maviastro_token', token);
       api.get('/auth/me', {

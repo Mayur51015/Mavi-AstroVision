@@ -21,7 +21,7 @@ services:
       - key: JWT_EXPIRES_IN
         value: 7d
       - key: CLIENT_URL
-        sync: false
+        value: https://mavi-astro-vision.vercel.app
       - key: ASTROLOGY_API_KEY
         sync: false
       - key: ASTROLOGY_API_BASE_URL
@@ -33,7 +33,7 @@ services:
       - key: GOOGLE_CLIENT_SECRET
         sync: false
       - key: GOOGLE_CALLBACK_URL
-        sync: false
+        value: https://mavi-astrovision.onrender.com/api/auth/google/callback
       - key: ADMIN_EMAIL
         value: admin@maviastrovision.com,mayur2006khandare@gmail.com
       - key: ADMIN_DEFAULT_PASSWORD

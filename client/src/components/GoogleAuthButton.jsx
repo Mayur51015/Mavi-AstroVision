@@ -3,7 +3,10 @@ import { useTheme } from '../context/ThemeContext';
 
 const GoogleAuthButton = ({ label = 'Continue with Google' }) => {
   const { isDark } = useTheme();
-  const rawApi = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const defaultApi = import.meta.env.PROD
+    ? 'https://mavi-astrovision.onrender.com/api'
+    : 'http://localhost:5000/api';
+  const rawApi = import.meta.env.VITE_API_URL || defaultApi;
   const serverBase = rawApi.replace(/\/api\/?$/, '');
   const googleAuthUrl = `${serverBase}/api/auth/google`;
 

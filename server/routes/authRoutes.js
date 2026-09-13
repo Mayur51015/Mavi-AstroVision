@@ -16,7 +16,16 @@ router.post('/reset-password/:token', resetPassword);
 // Google OAuth routes
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 router.get('/google/callback', (req, res, next) => {
-  const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+  const getClientUrl = () => {
+    if (process.env.CLIENT_URL) {
+      return process.env.CLIENT_URL.replace(/\/+$/, '');
+    }
+    if (process.env.NODE_ENV === 'production' || process.env.RENDER) {
+      return 'https://mavi-astro-vision.vercel.app';
+    }
+    return 'http://localhost:5173';
+  };
+  const clientUrl = getClientUrl();
   passport.authenticate('google', { session: false }, (err, user, info) => {
     if (err || !user) {
       console.error('❌ Google OAuth error:', err || info);

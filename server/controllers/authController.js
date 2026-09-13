@@ -145,7 +145,7 @@ export const forgotPassword = async (req, res) => {
     user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
     await user.save({ validateBeforeSave: false });
 
-    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+    const clientUrl = (process.env.CLIENT_URL || (process.env.NODE_ENV === 'production' || process.env.RENDER ? 'https://mavi-astro-vision.vercel.app' : 'http://localhost:5173')).replace(/\/+$/, '');
     const resetUrl = `${clientUrl}/reset-password/${resetToken}`;
 
     await sendPasswordResetEmail({
