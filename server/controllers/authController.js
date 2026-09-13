@@ -70,6 +70,16 @@ export const login = async (req, res) => {
       return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
 
+    // Synchronize admin role if email matches ADMIN_EMAIL
+    const rawAdminEmails = process.env.ADMIN_EMAIL || 'admin@maviastrovision.com';
+    const adminEmails = rawAdminEmails
+      .split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean);
+    if (adminEmails.includes(user.email.toLowerCase()) && user.role !== 'admin') {
+      user.role = 'admin';
+    }
+
     user.lastLogin = new Date();
     await user.save();
 
@@ -94,6 +104,18 @@ export const getCurrentUser = async (req, res) => {
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
+
+    // Synchronize admin role if email matches ADMIN_EMAIL
+    const rawAdminEmails = process.env.ADMIN_EMAIL || 'admin@maviastrovision.com';
+    const adminEmails = rawAdminEmails
+      .split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean);
+    if (adminEmails.includes(user.email.toLowerCase()) && user.role !== 'admin') {
+      user.role = 'admin';
+      await user.save();
+    }
+
     res.json({ success: true, user: user.getPublicData() });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

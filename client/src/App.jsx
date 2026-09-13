@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import AppShell from './components/layout/AppShell';
@@ -7,6 +7,8 @@ import PublicNavbar from './components/layout/PublicNavbar';
 import Footer from './components/Footer';
 import ChatBot from './components/ChatBot';
 import Loader from './components/Loader';
+import { ShieldAlert, ArrowLeft, LogIn } from 'lucide-react';
+import Button from './components/ui/Button';
 
 // Lazy-loaded Pages
 const LandingPage = lazy(() => import('./pages/LandingPage'));
@@ -37,17 +39,77 @@ const FavoritesPage = lazy(() => import('./pages/FavoritesPage'));
 
 // Protected SaaS Route (Sidebar + Top Header + Mobile Nav)
 const ProtectedSaaSLayout = ({ children }) => {
+  const { user, loading } = useAuth();
   const token = localStorage.getItem('maviastro_token');
-  if (!token) return <Navigate to="/login" replace />;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-obsidian-950">
+        <Loader text="Loading your cosmic sanctuary..." />
+      </div>
+    );
+  }
+
+  if (!token || !user) return <Navigate to="/login" replace />;
   return <AppShell>{children}</AppShell>;
 };
 
-// Admin SaaS Route
+// Admin SaaS Route with proper loading, 401 & 403 handling
 const AdminSaaSLayout = ({ children }) => {
+  const { user, loading } = useAuth();
   const token = localStorage.getItem('maviastro_token');
-  const user = JSON.parse(localStorage.getItem('maviastro_user') || '{}');
-  if (!token) return <Navigate to="/login" replace />;
-  if (user.role !== 'admin') return <Navigate to="/dashboard" replace />;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-obsidian-950">
+        <Loader text="Verifying celestial administrator credentials..." />
+      </div>
+    );
+  }
+
+  // 401: Unauthenticated
+  if (!token || !user) {
+    return <Navigate to="/login" state={{ from: '/admin' }} replace />;
+  }
+
+  // 403: Authenticated as normal user, lacking admin role
+  if (user.role !== 'admin') {
+    return (
+      <AppShell>
+        <div className="min-h-[70vh] flex items-center justify-center px-4">
+          <div className="max-w-md w-full p-8 rounded-2xl bg-obsidian-900/90 border border-rose-500/20 text-center backdrop-blur-xl shadow-2xl">
+            <div className="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 mx-auto mb-5 shadow-lg">
+              <ShieldAlert size={32} />
+            </div>
+            <span className="px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold uppercase tracking-wider">
+              403 Forbidden
+            </span>
+            <h2 className="mt-3 text-xl font-bold font-cinzel text-white">
+              Restricted Sanctum
+            </h2>
+            <p className="mt-2 text-sm text-slate-400 leading-relaxed">
+              Administrative clearance required. Your account{' '}
+              <span className="text-slate-200 font-mono font-medium">{user.email}</span>{' '}
+              is registered as a Standard Seeker and lacks administrator authorization.
+            </p>
+            <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Link to="/dashboard" className="w-full sm:w-auto">
+                <Button variant="secondary" size="sm" icon={ArrowLeft} className="w-full">
+                  Return to Dashboard
+                </Button>
+              </Link>
+              <Link to="/login" className="w-full sm:w-auto">
+                <Button variant="primary" size="sm" icon={LogIn} className="w-full">
+                  Sign in as Admin
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
+
   return <AppShell>{children}</AppShell>;
 };
 

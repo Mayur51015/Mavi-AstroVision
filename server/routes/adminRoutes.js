@@ -9,6 +9,7 @@ import {
   updateHoroscope,
   deleteHoroscope,
   getDashboardStats,
+  getAnalytics,
 } from '../controllers/adminController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { adminOnly } from '../middleware/adminMiddleware.js';
@@ -33,5 +34,6 @@ router.delete('/horoscopes/:id', deleteHoroscope);
 
 // Dashboard
 router.get('/stats', getDashboardStats);
+router.get('/analytics', getAnalytics);
 
 export default router;

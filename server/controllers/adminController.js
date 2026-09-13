@@ -214,18 +214,31 @@ export const getDashboardStats = async (req, res) => {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     const newUsersLast7Days = await User.countDocuments({ createdAt: { $gte: sevenDaysAgo } });
 
+    // Most popular zodiac signs
+    const popularSigns = await BirthDetail.aggregate([
+      { $group: { _id: '$zodiacSign', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 5 },
+    ]);
+
+    const statsPayload = {
+      totalUsers,
+      admins,
+      adminUsers: admins,
+      regularUsers: totalUsers - admins,
+      totalHoroscopes,
+      publishedHoroscopes,
+      totalArticles,
+      totalCharts,
+      newUsersLast7Days,
+      recentUsers: newUsersLast7Days,
+      popularSigns,
+    };
+
     res.json({
       success: true,
-      stats: {
-        totalUsers,
-        admins,
-        regularUsers: totalUsers - admins,
-        totalHoroscopes,
-        publishedHoroscopes,
-        totalArticles,
-        totalCharts,
-        newUsersLast7Days,
-      },
+      stats: statsPayload,
+      analytics: statsPayload,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -235,7 +248,7 @@ export const getDashboardStats = async (req, res) => {
 // @desc    Get analytics
 // @route   GET /api/admin/analytics
 // @access  Admin
-const getAnalytics = async (req, res) => {
+export const getAnalytics = async (req, res) => {
   try {
     const totalUsers = await User.countDocuments();
     const adminUsers = await User.countDocuments({ role: 'admin' });

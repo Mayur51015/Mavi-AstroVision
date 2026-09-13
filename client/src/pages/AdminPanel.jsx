@@ -81,7 +81,7 @@ const AdminPanel = () => {
       setLoading(true);
       if (activeTab === 'overview') {
         const res = await api.get('/admin/stats');
-        setStats(res.data.stats);
+        setStats(res.data.stats || res.data.analytics || null);
       } else if (activeTab === 'users') {
         const res = await api.get('/admin/users');
         setUsers(res.data.users || []);
@@ -94,7 +94,8 @@ const AdminPanel = () => {
       }
     } catch (error) {
       console.error('Admin fetch error:', error);
-      toast.error('Failed to load admin dataset');
+      const errMsg = error.response?.data?.message || 'Failed to load admin dataset';
+      toast.error(errMsg);
     } finally {
       setLoading(false);
     }

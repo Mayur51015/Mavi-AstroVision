@@ -23,11 +23,62 @@ import eventsRoutes from './routes/eventsRoutes.js';
 
 const app = express();
 
+// Sync and seed administrator privileges based on environment configuration
+const syncAdminUsers = async () => {
+  try {
+    const rawAdminEmails = process.env.ADMIN_EMAIL || 'admin@maviastrovision.com';
+    const adminEmails = rawAdminEmails
+      .split(',')
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean);
+
+    if (adminEmails.length === 0) return;
+
+    console.log(`🔐 Admin Security: Verifying authorization for: ${adminEmails.join(', ')}`);
+
+    // 1. Ensure the primary system admin account exists
+    const primaryAdminEmail = 'admin@maviastrovision.com';
+    const adminPassword = process.env.ADMIN_DEFAULT_PASSWORD || 'Admin@1234';
+
+    let primaryAdmin = await User.findOne({ email: primaryAdminEmail });
+    if (!primaryAdmin) {
+      console.log(`👤 Seeding primary administrator account (${primaryAdminEmail})...`);
+      primaryAdmin = await User.create({
+        firstName: 'Celestial',
+        lastName: 'Admin',
+        email: primaryAdminEmail,
+        password: adminPassword,
+        role: 'admin',
+        emailVerified: true,
+        isOnboarded: true,
+      });
+      console.log(`✅ Primary administrator account created successfully`);
+    } else if (primaryAdmin.role !== 'admin') {
+      primaryAdmin.role = 'admin';
+      await primaryAdmin.save();
+      console.log(`✅ Primary administrator role verified`);
+    }
+
+    // 2. Ensure all listed admin accounts in the database have role: 'admin'
+    for (const email of adminEmails) {
+      const user = await User.findOne({ email });
+      if (user && user.role !== 'admin') {
+        user.role = 'admin';
+        await user.save();
+        console.log(`✅ Assigned administrator role to authorized account: ${email}`);
+      }
+    }
+  } catch (error) {
+    console.error('⚠️ Admin synchronization warning:', error.message);
+  }
+};
+
 // Initialize server
 (async () => {
   try {
     // Connect to database
     await connectDB();
+    await syncAdminUsers();
 
     // Session middleware
     app.use(session({
@@ -63,6 +114,13 @@ const app = express();
           return done(new Error('No email associated with this Google account'), null);
         }
 
+        const rawAdminEmails = process.env.ADMIN_EMAIL || 'admin@maviastrovision.com';
+        const adminEmails = rawAdminEmails
+          .split(',')
+          .map((e) => e.trim().toLowerCase())
+          .filter(Boolean);
+        const isAdminEmail = adminEmails.includes(email.toLowerCase());
+
         let user = await User.findOne({ email });
         if (!user) {
           const firstName = profile.name?.givenName || profile.displayName?.split(' ')[0] || 'User';
@@ -72,7 +130,7 @@ const app = express();
             lastName,
             email,
             password: Math.random().toString(36).slice(-8) + 'Aa1!',
-            role: 'user',
+            role: isAdminEmail ? 'admin' : 'user',
             googleId: profile.id,
             emailVerified: true,
             profileImage: profile.photos && profile.photos[0] ? profile.photos[0].value : null,
@@ -81,6 +139,9 @@ const app = express();
           if (!user.googleId) user.googleId = profile.id;
           if (!user.profileImage && profile.photos && profile.photos[0]) {
             user.profileImage = profile.photos[0].value;
+          }
+          if (isAdminEmail && user.role !== 'admin') {
+            user.role = 'admin';
           }
           user.lastLogin = new Date();
           await user.save();

@@ -35,6 +35,6 @@ services:
       - key: GOOGLE_CALLBACK_URL
         sync: false
       - key: ADMIN_EMAIL
-        value: admin@maviastrovision.com
+        value: admin@maviastrovision.com,mayur2006khandare@gmail.com
       - key: ADMIN_DEFAULT_PASSWORD
         generateValue: true
