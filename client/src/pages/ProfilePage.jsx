@@ -18,6 +18,7 @@ import {
   Sun,
   Moon,
   ArrowRight,
+  Check,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -28,10 +29,36 @@ import toast from 'react-hot-toast';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import PageHeader from '../components/ui/PageHeader';
+import { ZODIAC_SIGNS } from '../utils/astrologyData';
 
-const AVATAR_PRESETS = [
-  '♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓', '🌟', '🌙', '☀️', '🔮',
+const CELESTIAL_PRESETS = [
+  { id: 'star', name: 'Cosmic Star', symbol: '🌟', meaning: 'Illumination' },
+  { id: 'moon', name: 'Crescent Moon', symbol: '🌙', meaning: 'Intuition' },
+  { id: 'sun', name: 'Solar Radiance', symbol: '☀️', meaning: 'Vitality' },
+  { id: 'orb', name: 'Mystic Orb', symbol: '🔮', meaning: 'Inner Sight' },
 ];
+
+const getZodiacSignFromDate = (dateStr) => {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return null;
+  const month = d.getUTCMonth() + 1;
+  const day = d.getUTCDate();
+
+  if ((month === 3 && day >= 21) || (month === 4 && day <= 19)) return 'Aries';
+  if ((month === 4 && day >= 20) || (month === 5 && day <= 20)) return 'Taurus';
+  if ((month === 5 && day >= 21) || (month === 6 && day <= 20)) return 'Gemini';
+  if ((month === 6 && day >= 21) || (month === 7 && day <= 22)) return 'Cancer';
+  if ((month === 7 && day >= 23) || (month === 8 && day <= 22)) return 'Leo';
+  if ((month === 8 && day >= 23) || (month === 9 && day <= 22)) return 'Virgo';
+  if ((month === 9 && day >= 23) || (month === 10 && day <= 22)) return 'Libra';
+  if ((month === 10 && day >= 23) || (month === 11 && day <= 21)) return 'Scorpio';
+  if ((month === 11 && day >= 22) || (month === 12 && day <= 21)) return 'Sagittarius';
+  if ((month === 12 && day >= 22) || (month === 1 && day <= 19)) return 'Capricorn';
+  if ((month === 1 && day >= 20) || (month === 2 && day <= 18)) return 'Aquarius';
+  if ((month === 2 && day >= 19) || (month === 3 && day <= 20)) return 'Pisces';
+  return null;
+};
 
 const isImageUrl = (val) => {
   if (!val || typeof val !== 'string') return false;
@@ -152,6 +179,22 @@ const ProfilePage = () => {
   };
 
   const completion = calculateCompletion();
+
+  const userCalculatedSign =
+    birthDetail?.sunSign ||
+    user?.sunSign ||
+    getZodiacSignFromDate(birthForm.dateOfBirth || birthDetail?.dateOfBirth);
+
+  const calculatedZodiacData = userCalculatedSign
+    ? ZODIAC_SIGNS.find((s) => s.name.toLowerCase() === userCalculatedSign.toLowerCase())
+    : null;
+
+  // Preselect user's calculated sign if no avatar is chosen yet
+  useEffect(() => {
+    if (!formData.profileImage && calculatedZodiacData?.symbol) {
+      setFormData((p) => ({ ...p, profileImage: calculatedZodiacData.symbol }));
+    }
+  }, [calculatedZodiacData?.symbol, formData.profileImage]);
 
   if (loading) return <Loader text="Aligning seeker profile..." />;
 
@@ -358,23 +401,145 @@ const ProfilePage = () => {
             </div>
 
             {isEditing && (
-              <div className="space-y-2">
-                <label className={labelClass}>Avatar Archetype Preset</label>
-                <div className="flex flex-wrap gap-2">
-                  {AVATAR_PRESETS.map((symbol) => (
-                    <button
+              <div className="pt-5 border-t border-obsidian-800 space-y-5">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                      <Sparkles size={15} className="text-gold-400" /> Profile Avatar
+                    </label>
+                    <span className="text-[11px] text-slate-500">Visual Representation</span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                    Choose how your seeker profile is represented across Mavi-AstroVision. Note: Avatar selection is visual only and does not alter your calculated birth chart coordinates.
+                  </p>
+                </div>
+
+                {/* Calculated Sign Highlight Card */}
+                {calculatedZodiacData && (
+                  <div className="p-4 rounded-xl bg-gradient-to-r from-gold-500/10 via-obsidian-900 to-obsidian-900 border border-gold-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-12 h-12 rounded-xl bg-obsidian-950 border border-gold-500/50 flex items-center justify-center text-2xl font-cinzel text-gold-400 font-bold shadow-inner shrink-0">
+                        {calculatedZodiacData.symbol}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-gold-400 bg-gold-500/15 px-2 py-0.5 rounded-md border border-gold-500/30">
+                            Your Calculated Zodiac Sign
+                          </span>
+                        </div>
+                        <h4 className="text-base font-cinzel font-bold text-white mt-0.5">
+                          {calculatedZodiacData.symbol} {calculatedZodiacData.name}
+                        </h4>
+                        <p className="text-xs text-slate-400">
+                          Based on your birth coordinates ({calculatedZodiacData.dates} • {calculatedZodiacData.element} element)
+                        </p>
+                      </div>
+                    </div>
+                    <Button
                       type="button"
-                      key={symbol}
-                      onClick={() => setFormData((p) => ({ ...p, profileImage: symbol }))}
-                      className={`w-9 h-9 rounded-lg border flex items-center justify-center text-sm transition-all ${
-                        formData.profileImage === symbol
-                          ? 'bg-gold-500 border-gold-400 text-obsidian-950 font-bold scale-105 shadow'
-                          : 'bg-obsidian-950 border-obsidian-800 text-slate-300 hover:bg-obsidian-800'
-                      }`}
+                      size="sm"
+                      variant={formData.profileImage === calculatedZodiacData.symbol ? 'outline' : 'primary'}
+                      onClick={() => setFormData((p) => ({ ...p, profileImage: calculatedZodiacData.symbol }))}
+                      className="text-xs shrink-0 self-end sm:self-auto"
                     >
-                      {symbol}
-                    </button>
-                  ))}
+                      {formData.profileImage === calculatedZodiacData.symbol ? (
+                        <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
+                          <CheckCircle2 size={14} /> Active Avatar
+                        </span>
+                      ) : (
+                        <span>Use My Sign ({calculatedZodiacData.symbol})</span>
+                      )}
+                    </Button>
+                  </div>
+                )}
+
+                {/* Zodiac Sign Grid */}
+                <div className="space-y-2">
+                  <span className="text-xs font-semibold text-slate-300 block">
+                    Choose by Zodiac Sign
+                  </span>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+                    {ZODIAC_SIGNS.map((sign) => {
+                      const isSelected = formData.profileImage === sign.symbol;
+                      const isUserSign = calculatedZodiacData?.id === sign.id;
+                      return (
+                        <button
+                          type="button"
+                          key={sign.id}
+                          onClick={() => setFormData((p) => ({ ...p, profileImage: sign.symbol }))}
+                          aria-label={`${sign.name} (${sign.symbol}) avatar`}
+                          className={`p-3 rounded-xl border text-left transition-all relative flex items-center justify-between group focus:outline-none focus:ring-2 focus:ring-gold-500/40 ${
+                            isSelected
+                              ? 'bg-gold-500/15 border-gold-400 text-white shadow-md ring-1 ring-gold-400/50'
+                              : 'bg-obsidian-950/80 border-obsidian-800 text-slate-300 hover:border-slate-700 hover:bg-obsidian-900'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className="text-xl font-cinzel font-bold text-gold-400 group-hover:scale-110 transition-transform shrink-0">
+                              {sign.symbol}
+                            </span>
+                            <div className="min-w-0">
+                              <span className="text-xs font-semibold text-slate-200 block truncate">
+                                {sign.name}
+                              </span>
+                              <span className="text-[10px] text-slate-500 block truncate">
+                                {sign.element}
+                              </span>
+                            </div>
+                          </div>
+                          {isSelected ? (
+                            <CheckCircle2 size={16} className="text-gold-400 shrink-0 ml-1" />
+                          ) : isUserSign ? (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gold-500/10 text-gold-400 border border-gold-500/20 shrink-0 ml-1">
+                              Yours
+                            </span>
+                          ) : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Celestial Symbols Section */}
+                <div className="space-y-2 pt-1">
+                  <span className="text-xs font-semibold text-slate-300 block">
+                    Or Choose Celestial Archetype
+                  </span>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    {CELESTIAL_PRESETS.map((item) => {
+                      const isSelected = formData.profileImage === item.symbol;
+                      return (
+                        <button
+                          type="button"
+                          key={item.id}
+                          onClick={() => setFormData((p) => ({ ...p, profileImage: item.symbol }))}
+                          aria-label={`${item.name} (${item.symbol}) avatar`}
+                          className={`p-3 rounded-xl border text-left transition-all relative flex items-center justify-between group focus:outline-none focus:ring-2 focus:ring-gold-500/40 ${
+                            isSelected
+                              ? 'bg-gold-500/15 border-gold-400 text-white shadow-md ring-1 ring-gold-400/50'
+                              : 'bg-obsidian-950/80 border-obsidian-800 text-slate-300 hover:border-slate-700 hover:bg-obsidian-900'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className="text-xl group-hover:scale-110 transition-transform shrink-0">
+                              {item.symbol}
+                            </span>
+                            <div className="min-w-0">
+                              <span className="text-xs font-semibold text-slate-200 block truncate">
+                                {item.name}
+                              </span>
+                              <span className="text-[10px] text-slate-500 block truncate">
+                                {item.meaning}
+                              </span>
+                            </div>
+                          </div>
+                          {isSelected && (
+                            <CheckCircle2 size={16} className="text-gold-400 shrink-0 ml-1" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             )}
