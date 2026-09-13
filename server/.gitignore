@@ -1,5 +1,22 @@
 node_modules/
 .env
 .env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
 !.env.example
 *.log
+
+# Secrets, keys, and credentials
+*.pem
+*.key
+*.cert
+*.p12
+credentials.json
+client_secret*.json
+serviceAccountKey*.json
+service-account*.json
+firebase-adminsdk*.json
+.npmrc
