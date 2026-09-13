@@ -1,24 +1,37 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Sparkles, Compass, Clock, Menu } from 'lucide-react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { LayoutDashboard, Sparkles, Compass, Clock, Menu, BarChart3, Users, FileText } from 'lucide-react';
 
 export default function MobileNav({ onOpenMenu }) {
-  const tabs = [
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith('/admin');
+
+  const userTabs = [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/cosmic-life-map', label: 'Life Map', icon: Sparkles, featured: true },
     { to: '/birth-chart', label: 'Chart', icon: Compass },
     { to: '/cosmic-timeline', label: 'Timeline', icon: Clock },
   ];
 
+  const adminTabs = [
+    { to: '/admin', label: 'Overview', icon: BarChart3, end: true },
+    { to: '/admin/users', label: 'Users', icon: Users },
+    { to: '/admin/astrology', label: 'Data', icon: Sparkles },
+    { to: '/admin/articles', label: 'Articles', icon: FileText },
+  ];
+
+  const currentTabs = isAdminRoute ? adminTabs : userTabs;
+
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-obsidian-950/95 backdrop-blur-lg border-t border-slate-800/80 px-2 py-1.5 pb-safe">
       <div className="flex items-center justify-around">
-        {tabs.map((tab) => {
+        {currentTabs.map((tab) => {
           const Icon = tab.icon;
           return (
             <NavLink
               key={tab.to}
               to={tab.to}
+              end={tab.end}
               className={({ isActive }) =>
                 `flex flex-col items-center justify-center py-1 px-3 rounded-xl text-[10px] font-semibold transition-all ${
                   isActive

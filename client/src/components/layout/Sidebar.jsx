@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Sparkles,
@@ -16,14 +16,22 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  BarChart3,
+  Users,
+  ArrowLeft,
+  Cpu,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export default function Sidebar({ collapsed, onToggleCollapse, isMobileOpen, onCloseMobile }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const navItems = [
+  const isAdminRoute = location.pathname.startsWith('/admin');
+
+  // Standard User Navigation (Celestial Suite)
+  const userNavItems = [
     { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     {
       to: '/cosmic-life-map',
@@ -42,8 +50,19 @@ export default function Sidebar({ collapsed, onToggleCollapse, isMobileOpen, onC
   ];
 
   if (user?.role === 'admin') {
-    navItems.push({ to: '/admin', label: 'Admin Console', icon: Shield, admin: true });
+    userNavItems.push({ to: '/admin', label: 'Admin Console', icon: Shield, admin: true });
   }
+
+  // Admin-Specific Navigation (Admin Console)
+  const adminNavItems = [
+    { to: '/admin', label: 'Overview & Metrics', icon: BarChart3, end: true },
+    { to: '/admin/users', label: 'User Registry', icon: Users },
+    { to: '/admin/astrology', label: 'Astrology Data', icon: Sparkles },
+    { to: '/admin/articles', label: 'Knowledge Base', icon: FileText },
+    { to: '/admin/security', label: 'System & Security', icon: Shield },
+  ];
+
+  const currentNavItems = isAdminRoute ? adminNavItems : userNavItems;
 
   const handleLogout = () => {
     logout();
@@ -54,10 +73,13 @@ export default function Sidebar({ collapsed, onToggleCollapse, isMobileOpen, onC
     <div className="flex flex-col h-full bg-obsidian-950 border-r border-slate-800/80 text-slate-300 select-none">
       {/* Brand Header */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800/80 shrink-0">
-        <NavLink to="/dashboard" className="flex items-center gap-3 overflow-hidden group">
+        <NavLink
+          to={isAdminRoute ? '/admin' : '/dashboard'}
+          className="flex items-center gap-3 overflow-hidden group"
+        >
           <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-gold-500 to-amber-400 p-0.5 shrink-0 flex items-center justify-center shadow-gold">
             <div className="w-full h-full rounded-[10px] bg-obsidian-950 flex items-center justify-center text-gold-400">
-              <Sparkles size={18} />
+              {isAdminRoute ? <Shield size={18} /> : <Sparkles size={18} />}
             </div>
           </div>
           {!collapsed && (
@@ -66,7 +88,7 @@ export default function Sidebar({ collapsed, onToggleCollapse, isMobileOpen, onC
                 MAVI<span className="text-gold-400">ASTRO</span>
               </span>
               <span className="text-[9px] uppercase tracking-widest text-slate-500 font-semibold">
-                Intelligence Platform
+                {isAdminRoute ? 'Admin Console' : 'Intelligence Platform'}
               </span>
             </div>
           )}
@@ -86,17 +108,23 @@ export default function Sidebar({ collapsed, onToggleCollapse, isMobileOpen, onC
       {/* Navigation Links */}
       <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1.5 scrollbar-thin">
         {!collapsed && (
-          <div className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-            Celestial Suite
+          <div className="px-3 pb-2 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+            <span>{isAdminRoute ? 'Admin Console' : 'Celestial Suite'}</span>
+            {isAdminRoute && (
+              <span className="px-1.5 py-0.2 rounded bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[9px] font-bold">
+                Operator
+              </span>
+            )}
           </div>
         )}
 
-        {navItems.map((item) => {
+        {currentNavItems.map((item) => {
           const Icon = item.icon;
           return (
             <NavLink
               key={item.to}
               to={item.to}
+              end={item.end}
               onClick={onCloseMobile}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group relative ${
@@ -126,6 +154,21 @@ export default function Sidebar({ collapsed, onToggleCollapse, isMobileOpen, onC
             </NavLink>
           );
         })}
+
+        {/* Back to User App Button for Administrators */}
+        {isAdminRoute && (
+          <div className="pt-3 mt-3 border-t border-slate-800/80">
+            <NavLink
+              to="/dashboard"
+              onClick={onCloseMobile}
+              className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-gold-400 bg-gold-500/10 border border-gold-500/25 hover:bg-gold-500/20 transition-all group"
+              title="Back to User App"
+            >
+              <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform shrink-0" />
+              {!collapsed && <span className="truncate">Back to User App</span>}
+            </NavLink>
+          </div>
+        )}
       </div>
 
       {/* User & Settings Footer */}

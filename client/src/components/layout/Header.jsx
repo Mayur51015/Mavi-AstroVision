@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   Menu,
   Moon,
@@ -12,6 +12,7 @@ import {
   ChevronDown,
   Shield,
   Compass,
+  ArrowLeft,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -40,6 +41,8 @@ export default function Header({ onOpenMobileMenu }) {
   const dropdownRef = useRef(null);
   const notifRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith('/admin');
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -75,8 +78,8 @@ export default function Header({ onOpenMobileMenu }) {
 
         <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-slate-400">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="tracking-wider uppercase text-[11px] text-slate-400">
-            Celestial Ephemeris Synced
+          <span className="tracking-wider uppercase text-[11px] text-slate-300 font-semibold">
+            {isAdminRoute ? 'Admin Command Center' : 'Celestial Ephemeris Synced'}
           </span>
         </div>
       </div>
@@ -172,38 +175,68 @@ export default function Header({ onOpenMobileMenu }) {
               </div>
 
               <div className="py-1.5">
-                <Link
-                  to="/profile"
-                  onClick={() => setProfileDropdownOpen(false)}
-                  className="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-slate-300 hover:text-white hover:bg-white/[0.04] transition-colors"
-                >
-                  <User size={15} /> My Profile
-                </Link>
+                {isAdminRoute ? (
+                  <>
+                    <Link
+                      to="/dashboard"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-gold-400 hover:bg-gold-500/10 transition-colors"
+                    >
+                      <ArrowLeft size={15} /> Back to User App
+                    </Link>
 
-                <Link
-                  to="/cosmic-life-map"
-                  onClick={() => setProfileDropdownOpen(false)}
-                  className="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-slate-300 hover:text-white hover:bg-white/[0.04] transition-colors"
-                >
-                  <Sparkles size={15} className="text-gold-400" /> Cosmic Life Map™
-                </Link>
+                    <Link
+                      to="/profile"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-slate-300 hover:text-white hover:bg-white/[0.04] transition-colors"
+                    >
+                      <User size={15} /> Operator Profile
+                    </Link>
 
-                <Link
-                  to="/settings"
-                  onClick={() => setProfileDropdownOpen(false)}
-                  className="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-slate-300 hover:text-white hover:bg-white/[0.04] transition-colors"
-                >
-                  <Settings size={15} /> Account Settings
-                </Link>
+                    <Link
+                      to="/settings"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-slate-300 hover:text-white hover:bg-white/[0.04] transition-colors"
+                    >
+                      <Settings size={15} /> Account Settings
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      to="/profile"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-slate-300 hover:text-white hover:bg-white/[0.04] transition-colors"
+                    >
+                      <User size={15} /> My Profile
+                    </Link>
 
-                {user?.role === 'admin' && (
-                  <Link
-                    to="/admin"
-                    onClick={() => setProfileDropdownOpen(false)}
-                    className="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-amber-400 hover:bg-amber-500/10 transition-colors"
-                  >
-                    <Shield size={15} /> Admin Console
-                  </Link>
+                    <Link
+                      to="/cosmic-life-map"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-slate-300 hover:text-white hover:bg-white/[0.04] transition-colors"
+                    >
+                      <Sparkles size={15} className="text-gold-400" /> Cosmic Life Map™
+                    </Link>
+
+                    <Link
+                      to="/settings"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-slate-300 hover:text-white hover:bg-white/[0.04] transition-colors"
+                    >
+                      <Settings size={15} /> Account Settings
+                    </Link>
+
+                    {user?.role === 'admin' && (
+                      <Link
+                        to="/admin"
+                        onClick={() => setProfileDropdownOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-amber-400 hover:bg-amber-500/10 transition-colors"
+                      >
+                        <Shield size={15} /> Admin Console
+                      </Link>
+                    )}
+                  </>
                 )}
               </div>
 

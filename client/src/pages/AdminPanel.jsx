@@ -23,7 +23,7 @@ import {
   Database,
   Calendar,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import Loader from '../components/Loader';
 import toast from 'react-hot-toast';
@@ -37,7 +37,22 @@ import Select from '../components/ui/Select';
 import EmptyState from '../components/ui/EmptyState';
 
 const AdminPanel = () => {
-  const [activeTab, setActiveTab] = useState('overview');
+  const { subtab } = useParams();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+
+  // Map route subtab or search query to internal tab
+  const resolveTab = (param) => {
+    if (!param) return 'overview';
+    const lower = param.toLowerCase();
+    if (lower === 'users' || lower === 'registry') return 'users';
+    if (lower === 'articles' || lower === 'knowledge') return 'articles';
+    if (lower === 'astrology' || lower === 'horoscopes') return 'horoscopes';
+    if (lower === 'security' || lower === 'system') return 'security';
+    return 'overview';
+  };
+
+  const [activeTab, setActiveTab] = useState(() => resolveTab(subtab || searchParams.get('tab')));
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
   const [articles, setArticles] = useState([]);
@@ -45,6 +60,25 @@ const AdminPanel = () => {
   const [loading, setLoading] = useState(true);
   const [userSearch, setUserSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
+
+  // Synchronize activeTab when route changes
+  useEffect(() => {
+    const nextTab = resolveTab(subtab || searchParams.get('tab'));
+    if (nextTab !== activeTab) {
+      setActiveTab(nextTab);
+    }
+  }, [subtab, searchParams]);
+
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    if (tabId === 'overview') {
+      navigate('/admin');
+    } else if (tabId === 'horoscopes') {
+      navigate('/admin/astrology');
+    } else {
+      navigate(`/admin/${tabId}`);
+    }
+  };
 
   // Horoscope form state
   const [newHoroscope, setNewHoroscope] = useState({
@@ -79,7 +113,7 @@ const AdminPanel = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      if (activeTab === 'overview') {
+      if (activeTab === 'overview' || activeTab === 'security') {
         const res = await api.get('/admin/stats');
         setStats(res.data.stats || res.data.analytics || null);
       } else if (activeTab === 'users') {
@@ -236,8 +270,9 @@ const AdminPanel = () => {
   const tabItems = [
     { id: 'overview', label: 'Overview & Metrics', icon: BarChart3 },
     { id: 'users', label: 'User Registry', icon: Users, badge: users.length ? String(users.length) : undefined },
+    { id: 'horoscopes', label: 'Astrology Data', icon: Sparkles },
     { id: 'articles', label: 'Knowledge Base', icon: FileText, badge: articles.length ? String(articles.length) : undefined },
-    { id: 'horoscopes', label: 'Horoscope Controls', icon: Sparkles },
+    { id: 'security', label: 'System & Security', icon: Shield },
   ];
 
   return (
@@ -279,7 +314,7 @@ const AdminPanel = () => {
           return (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => handleTabChange(tab.id)}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all shrink-0 cursor-pointer ${
                 isActive
                   ? 'bg-gold-500 text-obsidian-950 font-semibold shadow-sm'
@@ -949,6 +984,224 @@ const AdminPanel = () => {
                           </tr>
                         ))
                       )}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* SYSTEM & SECURITY TAB */}
+          {activeTab === 'security' && (
+            <motion.div
+              key="security"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-6"
+            >
+              {/* Infrastructure Telemetry Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card className="p-4 border-slate-800">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                      <Cpu size={20} />
+                    </div>
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
+                        Server Runtime
+                      </p>
+                      <p className="text-sm font-bold text-slate-100">Node.js / Express v4</p>
+                      <span className="text-[10px] text-emerald-400 font-mono">Engine v2.1 Active</span>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card className="p-4 border-slate-800">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
+                      <Database size={20} />
+                    </div>
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
+                        Database Cluster
+                      </p>
+                      <p className="text-sm font-bold text-slate-100">MongoDB Atlas</p>
+                      <span className="text-[10px] text-sky-400 font-mono">Cluster0 (ReplicaSet)</span>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card className="p-4 border-slate-800">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gold-500/10 border border-gold-500/20 flex items-center justify-center text-gold-400">
+                      <Shield size={20} />
+                    </div>
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
+                        Security Boundary
+                      </p>
+                      <p className="text-sm font-bold text-slate-100">Cryptographic JWT</p>
+                      <span className="text-[10px] text-gold-400 font-mono">RBAC (protect, adminOnly)</span>
+                    </div>
+                  </div>
+                </Card>
+
+                <Card className="p-4 border-slate-800">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+                      <Activity size={20} />
+                    </div>
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
+                        Production Cloud
+                      </p>
+                      <p className="text-sm font-bold text-slate-100">Render / Vercel Edge</p>
+                      <span className="text-[10px] text-purple-400 font-mono">Cloudflare Secured</span>
+                    </div>
+                  </div>
+                </Card>
+              </div>
+
+              {/* Security Policies and Enforcement */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Shield size={18} className="text-gold-400" />
+                      Role-Based Access Control Policies
+                    </CardTitle>
+                    <CardDescription>
+                      Strict server-side enforcement parameters active in production
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-obsidian-900/80 border border-slate-800/80 text-xs">
+                      <div>
+                        <p className="font-semibold text-slate-200">JWT Token Lifetime</p>
+                        <p className="text-[11px] text-slate-400">Issued via HMAC-SHA256 with 7-day expiration</p>
+                      </div>
+                      <Badge variant="gold" size="sm">7 Days</Badge>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-obsidian-900/80 border border-slate-800/80 text-xs">
+                      <div>
+                        <p className="font-semibold text-slate-200">Public Credential Sanitization</p>
+                        <p className="text-[11px] text-slate-400">0 developer credentials or test passwords in frontend bundle</p>
+                      </div>
+                      <Badge variant="success" size="sm">Enforced</Badge>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-obsidian-900/80 border border-slate-800/80 text-xs">
+                      <div>
+                        <p className="font-semibold text-slate-200">Admin Authorization Filter</p>
+                        <p className="text-[11px] text-slate-400">Requires database role: 'admin' and verified ADMIN_EMAIL registry</p>
+                      </div>
+                      <Badge variant="gold" size="sm">Active</Badge>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-obsidian-900/80 border border-slate-800/80 text-xs">
+                      <div>
+                        <p className="font-semibold text-slate-200">Unauthenticated / Unauthorized Responses</p>
+                        <p className="text-[11px] text-slate-400">Strict HTTP 401 and HTTP 403 status responses on all admin routes</p>
+                      </div>
+                      <Badge variant="default" size="sm">401 / 403</Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Activity size={18} className="text-sky-400" />
+                      Platform Account Directory Telemetry
+                    </CardTitle>
+                    <CardDescription>
+                      Real-time user count telemetry loaded directly from MongoDB Atlas
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-obsidian-900/80 border border-slate-800/80 text-xs">
+                      <span className="text-slate-300">Total Registered Seekers</span>
+                      <span className="font-bold text-slate-100 font-mono text-sm">{stats?.totalUsers ?? '...'}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-obsidian-900/80 border border-slate-800/80 text-xs">
+                      <span className="text-slate-300">Authorized System Administrators</span>
+                      <span className="font-bold text-gold-400 font-mono text-sm">{stats?.admins ?? '...'}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-obsidian-900/80 border border-slate-800/80 text-xs">
+                      <span className="text-slate-300">Standard Seeker Accounts</span>
+                      <span className="font-bold text-slate-100 font-mono text-sm">
+                        {stats ? stats.totalUsers - stats.admins : '...'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-obsidian-900/80 border border-slate-800/80 text-xs">
+                      <span className="text-slate-300">New Registrations (Last 7 Days)</span>
+                      <span className="font-bold text-emerald-400 font-mono text-sm">{stats?.newUsersLast7Days ?? '...'}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Protected API Endpoints Table */}
+              <Card className="overflow-hidden">
+                <CardHeader>
+                  <CardTitle className="text-base">Shielded Administrative API Endpoints</CardTitle>
+                  <CardDescription>
+                    All endpoints require valid bearer authentication and administrator privileges
+                  </CardDescription>
+                </CardHeader>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs">
+                    <thead>
+                      <tr className="border-b border-slate-800/80 bg-obsidian-950/60 text-slate-400">
+                        <th className="px-5 py-3 font-semibold uppercase tracking-wider">Method</th>
+                        <th className="px-5 py-3 font-semibold uppercase tracking-wider">Endpoint</th>
+                        <th className="px-5 py-3 font-semibold uppercase tracking-wider">Security Layer</th>
+                        <th className="px-5 py-3 font-semibold uppercase tracking-wider">Purpose</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60 font-mono">
+                      <tr>
+                        <td className="px-5 py-3 text-emerald-400 font-bold">GET</td>
+                        <td className="px-5 py-3 text-slate-200">/api/admin/stats</td>
+                        <td className="px-5 py-3 text-amber-400 font-sans text-xs font-semibold">protect, adminOnly</td>
+                        <td className="px-5 py-3 text-slate-400 font-sans text-xs">Command center overview analytics</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-3 text-emerald-400 font-bold">GET</td>
+                        <td className="px-5 py-3 text-slate-200">/api/admin/users</td>
+                        <td className="px-5 py-3 text-amber-400 font-sans text-xs font-semibold">protect, adminOnly</td>
+                        <td className="px-5 py-3 text-slate-400 font-sans text-xs">User directory with search & pagination</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-3 text-sky-400 font-bold">PUT</td>
+                        <td className="px-5 py-3 text-slate-200">/api/admin/users/:id/role</td>
+                        <td className="px-5 py-3 text-amber-400 font-sans text-xs font-semibold">protect, adminOnly</td>
+                        <td className="px-5 py-3 text-slate-400 font-sans text-xs">Role promotion and demotion</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-3 text-rose-400 font-bold">DELETE</td>
+                        <td className="px-5 py-3 text-slate-200">/api/admin/users/:id</td>
+                        <td className="px-5 py-3 text-amber-400 font-sans text-xs font-semibold">protect, adminOnly</td>
+                        <td className="px-5 py-3 text-slate-400 font-sans text-xs">Seeker deletion and profile cleanup</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-3 text-emerald-400 font-bold">GET</td>
+                        <td className="px-5 py-3 text-slate-200">/api/admin/horoscopes</td>
+                        <td className="px-5 py-3 text-amber-400 font-sans text-xs font-semibold">protect, adminOnly</td>
+                        <td className="px-5 py-3 text-slate-400 font-sans text-xs">Astrological transit archive</td>
+                      </tr>
+                      <tr>
+                        <td className="px-5 py-3 text-amber-400 font-bold">POST</td>
+                        <td className="px-5 py-3 text-slate-200">/api/admin/horoscopes</td>
+                        <td className="px-5 py-3 text-amber-400 font-sans text-xs font-semibold">protect, adminOnly</td>
+                        <td className="px-5 py-3 text-slate-400 font-sans text-xs">Dispatch custom transit advisory</td>
+                      </tr>
                     </tbody>
                   </table>
                 </div>

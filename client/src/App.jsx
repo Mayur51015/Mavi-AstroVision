@@ -257,9 +257,17 @@ function App() {
                 }
               />
 
-              {/* Admin Console Route */}
+              {/* Admin Console Routes */}
               <Route
                 path="/admin"
+                element={
+                  <AdminSaaSLayout>
+                    <AdminPanel />
+                  </AdminSaaSLayout>
+                }
+              />
+              <Route
+                path="/admin/:subtab"
                 element={
                   <AdminSaaSLayout>
                     <AdminPanel />
