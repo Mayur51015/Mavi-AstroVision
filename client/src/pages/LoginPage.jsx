@@ -188,13 +188,6 @@ const LoginPage = () => {
             Create account
           </Link>
         </p>
-
-        {/* Dev Demo Credentials */}
-        {import.meta.env.DEV && (
-          <div className={`mt-5 p-3 rounded-lg border text-[11px] font-mono ${isDark ? 'bg-obsidian-950 border-obsidian-800 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-600'}`}>
-            <span className="text-gold-400 font-semibold">Dev Creds:</span> admin@maviastrovision.com / Admin@1234
-          </div>
-        )}
       </motion.div>
     </div>
   );

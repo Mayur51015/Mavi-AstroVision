@@ -62,7 +62,7 @@ const AdminSaaSLayout = ({ children }) => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-obsidian-950">
-        <Loader text="Verifying celestial administrator credentials..." />
+        <Loader text="Verifying administrator clearance..." />
       </div>
     );
   }
