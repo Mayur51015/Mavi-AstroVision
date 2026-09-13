@@ -33,6 +33,22 @@ const AVATAR_PRESETS = [
   '♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓', '🌟', '🌙', '☀️', '🔮',
 ];
 
+const isImageUrl = (val) => {
+  if (!val || typeof val !== 'string') return false;
+  const trimmed = val.trim();
+  return /^(https?:\/\/|data:image\/|\/)/i.test(trimmed);
+};
+
+const getAvatarSymbol = (val, firstName) => {
+  if (val && typeof val === 'string') {
+    const trimmed = val.trim();
+    if (trimmed.length <= 4 && !/^(https?:\/\/|data:)/i.test(trimmed)) {
+      return trimmed;
+    }
+  }
+  return firstName?.charAt(0)?.toUpperCase() || '✨';
+};
+
 const ProfilePage = () => {
   const { user, updateUser } = useAuth();
   const { isDark } = useTheme();
@@ -207,8 +223,21 @@ const ProfilePage = () => {
           <div className="card-saas p-6 text-center space-y-4">
             <div className="relative inline-block mx-auto">
               <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-gold-500/30 to-iris-500/30 p-0.5 shadow-md">
-                <div className="w-full h-full rounded-2xl bg-obsidian-950 flex items-center justify-center text-3xl font-cinzel font-bold text-gold-400 border border-gold-500/30">
-                  {formData.profileImage || formData.firstName?.charAt(0) || '✨'}
+                <div className="w-full h-full rounded-2xl bg-obsidian-950 flex items-center justify-center text-3xl font-cinzel font-bold text-gold-400 border border-gold-500/30 overflow-hidden">
+                  {isImageUrl(formData.profileImage) ? (
+                    <img
+                      src={formData.profileImage}
+                      alt={`${formData.firstName || 'Seeker'} avatar`}
+                      className="w-full h-full object-cover rounded-2xl"
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        setFormData((p) => ({ ...p, profileImage: '' }));
+                      }}
+                    />
+                  ) : (
+                    <span>{getAvatarSymbol(formData.profileImage, formData.firstName)}</span>
+                  )}
                 </div>
               </div>
             </div>

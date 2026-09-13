@@ -16,6 +16,22 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
+const isImageUrl = (val) => {
+  if (!val || typeof val !== 'string') return false;
+  const trimmed = val.trim();
+  return /^(https?:\/\/|data:image\/|\/)/i.test(trimmed);
+};
+
+const getAvatarSymbol = (val, firstName) => {
+  if (val && typeof val === 'string') {
+    const trimmed = val.trim();
+    if (trimmed.length <= 4 && !/^(https?:\/\/|data:)/i.test(trimmed)) {
+      return trimmed;
+    }
+  }
+  return firstName?.charAt(0)?.toUpperCase() || '✨';
+};
+
 export default function Header({ onOpenMobileMenu }) {
   const { user, logout } = useAuth();
   const { theme, toggleTheme, isDark } = useTheme();
@@ -117,8 +133,20 @@ export default function Header({ onOpenMobileMenu }) {
             className="flex items-center gap-2.5 pl-2 pr-1.5 py-1.5 rounded-xl hover:bg-slate-800/60 border border-transparent hover:border-slate-800 transition-all cursor-pointer"
           >
             <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-gold-500 to-amber-400 p-0.5 flex items-center justify-center">
-              <div className="w-full h-full rounded-[10px] bg-obsidian-900 flex items-center justify-center text-gold-400 text-xs font-bold font-cinzel">
-                {user?.profileImage || (user?.firstName ? user.firstName.charAt(0) : '✨')}
+              <div className="w-full h-full rounded-[10px] bg-obsidian-900 flex items-center justify-center text-gold-400 text-xs font-bold font-cinzel overflow-hidden">
+                {isImageUrl(user?.profileImage) ? (
+                  <img
+                    src={user.profileImage}
+                    alt={user?.firstName || 'User'}
+                    className="w-full h-full object-cover rounded-[10px]"
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                ) : (
+                  <span>{getAvatarSymbol(user?.profileImage, user?.firstName)}</span>
+                )}
               </div>
             </div>
 

@@ -36,8 +36,10 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchDashboardData();
-  }, [user]);
+    if (user?._id) {
+      fetchDashboardData();
+    }
+  }, [user?._id]);
 
   const fetchDashboardData = async () => {
     try {
@@ -49,8 +51,9 @@ const Dashboard = () => {
       // 2. Fetch primary chart if available
       try {
         const chartRes = await api.get('/chart/primary');
-        if (chartRes.data?.chartData) {
-          setPrimaryChart(chartRes.data.chartData);
+        const chart = chartRes.data?.chartData || chartRes.data?.chart?.chartData;
+        if (chart) {
+          setPrimaryChart(chart);
         }
       } catch {
         // Optional chart fetch

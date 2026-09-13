@@ -181,31 +181,51 @@ export const getPrimaryChart = async (req, res) => {
     let birthDetail = await BirthDetail.findOne({ userId: req.user._id }).sort({ isPrimary: -1, createdAt: -1 });
 
     if (!birthDetail || !birthDetail.chartData) {
-      // Auto-generate if user has birth details
-      const user = await User.findById(req.user._id);
-      if (user.dateOfBirth) {
-        if (!birthDetail) {
-          birthDetail = await BirthDetail.create({
-            userId: user._id,
-            firstName: user.name?.split(' ')[0] || 'Seeker',
-            lastName: user.name?.split(' ').slice(1).join(' ') || 'Cosmic',
-            dateOfBirth: user.dateOfBirth,
-            timeOfBirth: user.timeOfBirth || '12:00',
-            placeOfBirth: user.placeOfBirth || 'Unknown',
-            latitude: user.latitude || 0,
-            longitude: user.longitude || 0,
-            timezone: user.timezone || 'UTC',
-            isPrimary: true,
+      if (birthDetail && birthDetail.dateOfBirth) {
+        // Calculate chart using CosmyDay first with fallback to local engine
+        const dob = new Date(birthDetail.dateOfBirth);
+        const [hourStr, minStr] = (birthDetail.timeOfBirth || '12:00').split(':');
+
+        let calculatedChart = null;
+        let chartSource = 'local-engine';
+
+        try {
+          const cosmydayResult = await fetchCosmydayNatal({
+            year: dob.getFullYear(),
+            month: dob.getMonth() + 1,
+            day: dob.getDate(),
+            hour: Number(hourStr) || 12,
+            minute: Number(minStr) || 0,
+            lat: birthDetail.latitude,
+            lon: birthDetail.longitude,
           });
+
+          if (cosmydayResult) {
+            const localChart = calculateCompleteChart({
+              dateOfBirth: birthDetail.dateOfBirth.toISOString ? birthDetail.dateOfBirth.toISOString() : new Date(birthDetail.dateOfBirth).toISOString(),
+              timeOfBirth: birthDetail.timeOfBirth,
+              latitude: birthDetail.latitude,
+              longitude: birthDetail.longitude,
+              timezone: Number(birthDetail.timezone) || 0,
+            });
+
+            calculatedChart = localChart;
+            birthDetail.rawChartData = cosmydayResult;
+            chartSource = 'cosmyday';
+          }
+        } catch (cosmydayErr) {
+          console.log('CosmyDay natal chart in getPrimaryChart failed, using local engine:', cosmydayErr.message);
         }
 
-        const calculatedChart = calculateCompleteChart({
-          dateOfBirth: birthDetail.dateOfBirth.toISOString(),
-          timeOfBirth: birthDetail.timeOfBirth,
-          latitude: birthDetail.latitude,
-          longitude: birthDetail.longitude,
-          timezone: Number(birthDetail.timezone) || 0,
-        });
+        if (!calculatedChart) {
+          calculatedChart = calculateCompleteChart({
+            dateOfBirth: birthDetail.dateOfBirth.toISOString ? birthDetail.dateOfBirth.toISOString() : new Date(birthDetail.dateOfBirth).toISOString(),
+            timeOfBirth: birthDetail.timeOfBirth,
+            latitude: birthDetail.latitude,
+            longitude: birthDetail.longitude,
+            timezone: Number(birthDetail.timezone) || 0,
+          });
+        }
 
         const interpretations = generateChartInterpretation(calculatedChart);
 
@@ -216,14 +236,30 @@ export const getPrimaryChart = async (req, res) => {
           ...calculatedChart,
           interpretations,
         };
+        if (chartSource === 'local-engine') {
+          birthDetail.rawChartData = calculatedChart;
+        }
+        birthDetail.chartSource = chartSource;
         await birthDetail.save();
+
+        await User.findByIdAndUpdate(req.user._id, {
+          sunSign: calculatedChart.bigThree.sun.sign,
+          moonSign: calculatedChart.bigThree.moon.sign,
+          ascendant: calculatedChart.bigThree.ascendant.sign,
+        });
       } else {
-        return res.status(404).json({ success: false, message: 'No birth chart found' });
+        return res.json({
+          success: true,
+          chart: null,
+          chartData: null,
+          message: 'No birth chart found. Please complete your birth details.',
+        });
       }
     }
 
     res.json({
       success: true,
+      chartData: birthDetail.chartData,
       chart: {
         _id: birthDetail._id,
         birthDetail: {
